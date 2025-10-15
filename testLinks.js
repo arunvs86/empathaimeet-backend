@@ -5,7 +5,7 @@ const https = require('https');
 async function run() {
   try {
     const resp = await axios.post(
-      'process.env.REACT_APP_API_URL/api/v1/links',
+      'http://localhost:9000/api/v1/links',
       {
         professionalsFullName: 'Arun',
         proId: 1234,
