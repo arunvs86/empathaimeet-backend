@@ -21,25 +21,54 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/health', (_req, res) => res.send('ok'));
 
+// app.post('/api/v1/links', (req, res) => {
+//   const { professionalsFullName, proId, clientName, apptDate, uuid } = req.body || {};
+//   if (!professionalsFullName || !clientName) {
+//     return res.status(400).json({ error: 'professionalsFullName and clientName are required' });
+//   }
+//   const id = uuid || uuidv4();
+
+//   const clientPayload = { uuid: id, professionalsFullName, clientName, apptDate };
+//   const proPayload    = { uuid: id, professionalsFullName, proId: proId || 'pro' };
+
+//   const clientToken = jwt.sign(clientPayload, LINK_SECRET, { expiresIn: '4h' });
+//   const proToken    = jwt.sign(proPayload, LINK_SECRET,    { expiresIn: '4h' });
+
+//   res.json({
+//     uuid: id,
+//     clientLink: `${FRONTEND_URL}/#/join-video?token=${encodeURIComponent(clientToken)}`,
+//     proLink:    `${FRONTEND_URL}/#/join-video-pro?token=${encodeURIComponent(proToken)}`
+//   });
+// });
+
 app.post('/api/v1/links', (req, res) => {
   const { professionalsFullName, proId, clientName, apptDate, uuid } = req.body || {};
-  if (!professionalsFullName || !clientName) {
-    return res.status(400).json({ error: 'professionalsFullName and clientName are required' });
+  if (!professionalsFullName || !clientName || !apptDate) {
+    return res.status(400).json({ error: 'professionalsFullName, clientName, and apptDate are required' });
   }
+
   const id = uuid || uuidv4();
+
+  // Compute expiry: 2 hours after appointment time
+  const appointmentTime = new Date(apptDate).getTime();
+  const expiryTime = appointmentTime + 2 * 60 * 60 * 1000; // +2 hours in ms
+  const secondsUntilExpiry = Math.max(60, Math.floor((expiryTime - Date.now()) / 1000)); // at least 60s
 
   const clientPayload = { uuid: id, professionalsFullName, clientName, apptDate };
   const proPayload    = { uuid: id, professionalsFullName, proId: proId || 'pro' };
 
-  const clientToken = jwt.sign(clientPayload, LINK_SECRET, { expiresIn: '4h' });
-  const proToken    = jwt.sign(proPayload, LINK_SECRET,    { expiresIn: '4h' });
+  // Set dynamic expiry in seconds
+  const clientToken = jwt.sign(clientPayload, LINK_SECRET, { expiresIn: secondsUntilExpiry });
+  const proToken    = jwt.sign(proPayload, LINK_SECRET, { expiresIn: secondsUntilExpiry });
 
   res.json({
     uuid: id,
+    expiresIn: secondsUntilExpiry,
     clientLink: `${FRONTEND_URL}/#/join-video?token=${encodeURIComponent(clientToken)}`,
     proLink:    `${FRONTEND_URL}/#/join-video-pro?token=${encodeURIComponent(proToken)}`
   });
 });
+
 
 app.post('/validate-link', (req, res) => {
   const { token } = req.body || {};
