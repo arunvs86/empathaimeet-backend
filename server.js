@@ -44,6 +44,7 @@ app.get('/health', (_req, res) => res.send('ok'));
 app.post('/api/v1/links', (req, res) => {
   const { professionalsFullName, proId, clientName, apptDate, uuid } = req.body || {};
   if (!professionalsFullName || !clientName || !apptDate) {
+    console.log("Error here with req body")
     return res.status(400).json({ error: 'professionalsFullName, clientName, and apptDate are required' });
   }
 
@@ -58,12 +59,12 @@ app.post('/api/v1/links', (req, res) => {
   const proPayload    = { uuid: id, professionalsFullName, proId: proId || 'pro' };
 
   // Set dynamic expiry in seconds
-  const clientToken = jwt.sign(clientPayload, LINK_SECRET, { expiresIn: secondsUntilExpiry });
-  const proToken    = jwt.sign(proPayload, LINK_SECRET, { expiresIn: secondsUntilExpiry });
+  const clientToken = jwt.sign(clientPayload, LINK_SECRET, { expiresIn: '60d' });
+  const proToken    = jwt.sign(proPayload, LINK_SECRET, { expiresIn: '60d' });
 
   res.json({
     uuid: id,
-    expiresIn: secondsUntilExpiry,
+    expiresIn: '60d',
     clientLink: `${FRONTEND_URL}/#/join-video?token=${encodeURIComponent(clientToken)}`,
     proLink:    `${FRONTEND_URL}/#/join-video-pro?token=${encodeURIComponent(proToken)}`
   });
